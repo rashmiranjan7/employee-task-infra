@@ -1,8 +1,8 @@
 # Employee Task Tracker — Infrastructure Repository
 
-Terraform code for the AWS infrastructure this app runs on: VPC, EKS, RDS, ECR, DNS/TLS, and a Jenkins server. One `terraform apply` builds all of it. What actually runs on the cluster is deployed by ArgoCD - see [employee-task-gitops](https://github.com/rashmiranjandevops/employee-task-gitops).
+Terraform code for the AWS infrastructure this app runs on: VPC, EKS, RDS, ECR, DNS/TLS, and a Jenkins server. One `terraform apply` builds all of it. What actually runs on the cluster is deployed by ArgoCD - see [employee-task-gitops](https://github.com/rashmiranjan7/employee-task-gitops).
 
-Part of a 3-repo project. The other two: [employee-task-app](https://github.com/rashmiranjandevops/employee-task-app) (application source + CI/CD, start here for full setup steps) and [employee-task-gitops](https://github.com/rashmiranjandevops/employee-task-gitops) (the ArgoCD Application that deploys it).
+Part of a 3-repo project. The other two: [employee-task-app](https://github.com/rashmiranjan7/employee-task-app) (application source + CI/CD, start here for full setup steps) and [employee-task-gitops](https://github.com/rashmiranjan7/employee-task-gitops) (the ArgoCD Application that deploys it).
 
 This project only runs one environment (dev) — this is a portfolio/learning project, not a real company setup, so there's no separate prod environment to keep in sync.
 
@@ -51,7 +51,7 @@ terraform apply -var-file=terraform.tfvars
 
 That one apply creates the VPC, EKS cluster, RDS database, ECR repos, ACM cert, GitHub OIDC role, and the Jenkins server (Jenkins installs itself automatically on boot - no separate step needed).
 
-Full step-by-step order across all 3 repos: `employee-task-app`'s [SETUP.md](https://github.com/rashmiranjandevops/employee-task-app/blob/main/SETUP.md).
+Full step-by-step order across all 3 repos: `employee-task-app`'s [SETUP.md](https://github.com/rashmiranjan7/employee-task-app/blob/main/SETUP.md).
 
 ## Deployment instructions
 
@@ -80,7 +80,7 @@ If you change `terraform/modules/jenkins-server/user-data.sh`, that only runs ag
 | Jenkins job fails with "command not found" | SSH in and check `/var/log/cloud-init-output.log` — user-data.sh may still be running or failed partway |
 | ALB never gets created / Ingress has no `ADDRESS` | Almost always IRSA — see `employee-task-app`'s TROUBLESHOOTING.md |
 
-Full troubleshooting guide (covers all 3 repos): `employee-task-app`'s [TROUBLESHOOTING.md](https://github.com/rashmiranjandevops/employee-task-app/blob/main/TROUBLESHOOTING.md).
+Full troubleshooting guide (covers all 3 repos): `employee-task-app`'s [TROUBLESHOOTING.md](https://github.com/rashmiranjan7/employee-task-app/blob/main/TROUBLESHOOTING.md).
 
 ## Why Terraform installs Jenkins with user_data instead of a separate tool
 
