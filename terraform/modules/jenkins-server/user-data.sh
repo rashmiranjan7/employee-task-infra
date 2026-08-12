@@ -17,8 +17,10 @@ systemctl start docker
 usermod -aG docker ubuntu
 
 # ─── Jenkins ────────────────────────────────────────────────────────────────
+# jenkins.io's key is ASCII-armored; apt's signed-by option needs the
+# binary/dearmored form, so pipe it through gpg --dearmor.
 curl -fsSL https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key \
-  -o /usr/share/keyrings/jenkins-keyring.asc
+  | gpg --dearmor -o /usr/share/keyrings/jenkins-keyring.asc
 
 echo "deb [signed-by=/usr/share/keyrings/jenkins-keyring.asc] https://pkg.jenkins.io/debian-stable binary/" \
   > /etc/apt/sources.list.d/jenkins.list
@@ -30,8 +32,10 @@ systemctl enable jenkins
 systemctl start jenkins
 
 # ─── kubectl ────────────────────────────────────────────────────────────────
+# Matches the EKS cluster's version (1.34) - kubectl only officially
+# supports being at most 1 minor version off from the cluster it talks to.
 curl -fsSL -o /usr/local/bin/kubectl \
-  "https://dl.k8s.io/release/v1.30.0/bin/linux/amd64/kubectl"
+  "https://dl.k8s.io/release/v1.34.0/bin/linux/amd64/kubectl"
 chmod +x /usr/local/bin/kubectl
 
 # ─── Helm ───────────────────────────────────────────────────────────────────

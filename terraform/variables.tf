@@ -9,7 +9,7 @@ variable "domain_name" {
 }
 
 variable "github_repo_subject" {
-  description = "your-github-username/employee-task-app - scopes the OIDC role to only this repo"
+  description = "rashmiranjan7/employee-task-app - scopes the OIDC role to only this repo"
   type        = string
 }
 
@@ -73,5 +73,5 @@ variable "node_desired_size" {
 # ─── RDS ──────────────────────────────────────────────────────────────────────
 variable "rds_instance_class" {
   type    = string
-  default = "db.t3.micro"
+  default = "db.t4g.micro"
 }

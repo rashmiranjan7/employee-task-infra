@@ -2,7 +2,7 @@
 # scripts/bootstrap-backend.sh) and run:
 #   terraform init -backend-config=backend.hcl
 
-bucket         = "employee-task-tfstate-<your-account-id>"
+bucket         = "employee-task-tfstate-897074277336"
 key            = "dev/terraform.tfstate"
 region         = "us-east-1"
 dynamodb_table = "employee-task-tf-locks"
