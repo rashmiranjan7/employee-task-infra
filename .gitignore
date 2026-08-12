@@ -1,0 +1,17 @@
+# Terraform
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+crash.log
+crash.*.log
+# Note: .terraform.lock.hcl is intentionally NOT ignored - it should be
+# committed so everyone applies with the same provider versions.
+
+# local secrets
+terraform.tfvars
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/

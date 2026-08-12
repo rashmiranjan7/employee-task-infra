@@ -1,0 +1,35 @@
+# Copy this file to terraform.tfvars and fill in your own values.
+#   cp terraform.tfvars.example terraform.tfvars
+
+aws_region = "us-east-1"
+
+# A domain you own, with its nameservers already pointed at Route53.
+domain_name = "yourdomain.com"
+
+# Scopes the GitHub Actions OIDC role to only your repo.
+# Format: OWNER/REPO
+github_repo_subject = "your-github-username/employee-task-app"
+
+# Your own IP address, so only you can reach the Jenkins server.
+# Find it with: curl ifconfig.me
+jenkins_admin_cidr = "203.0.113.5/32"
+
+# Name of an EC2 key pair you already created in this AWS region.
+jenkins_ssh_key_name = "employee-task-key"
+
+# ─── Networking ─────────────────────────────────────────────────────────────
+vpc_cidr           = "10.10.0.0/16"
+availability_zones = ["us-east-1a", "us-east-1b"]
+public_subnets     = ["10.10.0.0/24", "10.10.1.0/24"]
+private_subnets    = ["10.10.10.0/24", "10.10.11.0/24"]
+database_subnets   = ["10.10.20.0/24", "10.10.21.0/24"]
+
+# ─── EKS ──────────────────────────────────────────────────────────────────────
+cluster_version     = "1.30"
+node_instance_types = ["t3.medium"]
+node_min_size       = 1
+node_max_size       = 2
+node_desired_size   = 1
+
+# ─── RDS ──────────────────────────────────────────────────────────────────────
+rds_instance_class = "db.t3.micro"
