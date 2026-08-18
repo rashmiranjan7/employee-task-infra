@@ -145,7 +145,7 @@ Rough cost: **$60–90 per month** while it's running. I run `terraform destroy`
 | ALB never gets created, or the Ingress has no address | Almost always an IAM role problem (IRSA). See `employee-task-app`'s TROUBLESHOOTING.md. |
 | Teardown gets stuck on a VPC or subnet | A leftover load balancer or target group is still attached. See [DESTROY.md](./DESTROY.md) — it has checks built in for exactly this. |
 
-Full troubleshooting guide across all 3 repos: `employee-task-app`'s [TROUBLESHOOTING.md](https://github.com/rashmiranjanDevOps/employee-task-app/blob/main/TROUBLESHOOTING.md).
+Full troubleshooting guide across all 3 repos: `employee-task-app`'s [TROUBLESHOOTING.md](https://github.com/rashmiranjan7/employee-task-app/blob/main/TROUBLESHOOTING.md).
 
 ## Why Terraform installs Jenkins by itself
 
