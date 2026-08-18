@@ -76,6 +76,7 @@ module "eks" {
   cluster_name        = local.cluster_name
   cluster_version     = var.cluster_version
   vpc_id              = module.vpc.vpc_id
+  vpc_cidr            = var.vpc_cidr
   private_subnet_ids  = module.vpc.private_subnet_ids
   public_subnet_ids   = module.vpc.public_subnet_ids
   node_instance_types = var.node_instance_types
@@ -111,9 +112,13 @@ module "route53" {
 module "acm" {
   source = "./modules/acm"
 
-  domain_name               = var.domain_name
-  subject_alternative_names = []
-  route53_zone_id           = module.route53.zone_id
+  domain_name = var.domain_name
+  # A wildcard here means one certificate covers the app's own hostname
+  # (rashmidevops.xyz, from domain_name above) AND any one-level
+  # subdomain - argocd.rashmidevops.xyz today, anything else later -
+  # without needing another Terraform change each time.
+  subject_alternative_names = ["*.${var.domain_name}"]
+  route53_zone_id            = module.route53.zone_id
 }
 
 # ─── GitHub Actions OIDC role: lets the workflow push to ECR ────────────────
@@ -145,8 +150,19 @@ resource "aws_iam_role" "github_actions" {
           "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
         }
         # Only this one GitHub repo can assume this role.
+        # Only this one GitHub repo can assume this role. Matches BOTH
+        # subject formats GitHub can send: the classic name-based one
+        # (repo:OWNER/REPO:*) and, since GitHub started using it for all
+        # repos created after July 15 2026, the newer immutable-ID one
+        # (repo:OWNER@id/REPO@id:*) - the "@*" wildcard matches whatever
+        # numeric owner/repo ID GitHub embeds, so this doesn't need to be
+        # updated if the repo is ever renamed or the ID changes.
+        # https://github.blog/changelog/2026-04-23-immutable-subject-claims-for-github-actions-oidc-tokens/
         StringLike = {
-          "token.actions.githubusercontent.com:sub" = "repo:${var.github_repo_subject}:*"
+          "token.actions.githubusercontent.com:sub" = [
+            "repo:${var.github_repo_subject}:*",
+            "repo:${split("/", var.github_repo_subject)[0]}@*/${split("/", var.github_repo_subject)[1]}@*:*",
+          ]
         }
       }
     }]

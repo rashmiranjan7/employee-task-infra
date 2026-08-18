@@ -12,6 +12,11 @@ variable "vpc_id" {
   type = string
 }
 
+variable "vpc_cidr" {
+  description = "Used to let the ALB reach pods on their app ports for health checks and traffic"
+  type        = string
+}
+
 variable "private_subnet_ids" {
   type = list(string)
 }

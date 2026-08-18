@@ -155,6 +155,29 @@ resource "aws_security_group" "node" {
     self        = true
   }
 
+  # The ALB's health checks and forwarded traffic come from its own ENIs,
+  # which live in the VPC's public subnets - not from the node/cluster
+  # security groups above. Without this, the ALB Controller creates the
+  # Ingress and target group fine, but every target sits "unhealthy" with
+  # Target.Timeout forever, since nothing lets the ALB actually reach the
+  # pods. Scoped to the VPC CIDR (not 0.0.0.0/0) and only the app's own
+  # ports, not a wide range.
+  ingress {
+    description = "Allow the ALB to reach app pods (backend)"
+    from_port   = 5000
+    to_port     = 5000
+    protocol    = "tcp"
+    cidr_blocks = [var.vpc_cidr]
+  }
+
+  ingress {
+    description = "Allow the ALB to reach app pods (frontend + argocd-server, both use 8080)"
+    from_port   = 8080
+    to_port     = 8080
+    protocol    = "tcp"
+    cidr_blocks = [var.vpc_cidr]
+  }
+
   egress {
     from_port   = 0
     to_port     = 0

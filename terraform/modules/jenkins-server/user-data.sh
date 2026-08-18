@@ -5,7 +5,7 @@
 #
 # Log file if something goes wrong: /var/log/cloud-init-output.log
 
-set -e
+set -euo pipefail
 
 apt-get update -y
 apt-get install -y openjdk-17-jdk git curl unzip jq awscli
@@ -17,10 +17,11 @@ systemctl start docker
 usermod -aG docker ubuntu
 
 # ─── Jenkins ────────────────────────────────────────────────────────────────
-# jenkins.io's key is ASCII-armored; apt's signed-by option needs the
-# binary/dearmored form, so pipe it through gpg --dearmor.
-curl -fsSL https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key \
-  | gpg --dearmor -o /usr/share/keyrings/jenkins-keyring.asc
+# Jenkins rotated their apt signing key in Dec 2025 - the URL changed from
+# jenkins.io-2023.key to jenkins.io-2026.key. See:
+# https://www.jenkins.io/blog/2025/12/23/repository-signing-keys-changing/
+curl -fsSL https://pkg.jenkins.io/debian-stable/jenkins.io-2026.key \
+  | tee /usr/share/keyrings/jenkins-keyring.asc > /dev/null
 
 echo "deb [signed-by=/usr/share/keyrings/jenkins-keyring.asc] https://pkg.jenkins.io/debian-stable binary/" \
   > /etc/apt/sources.list.d/jenkins.list
