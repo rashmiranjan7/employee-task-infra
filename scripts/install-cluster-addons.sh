@@ -14,7 +14,7 @@ set -euo pipefail
 
 CLUSTER_NAME="employee-task-dev"
 AWS_REGION="us-east-1"
-APP_DOMAIN="yourdomain.com"   # same value as domain_name in terraform.tfvars
+APP_DOMAIN="rashmidevops.xyz"   # same value as domain_name in terraform.tfvars
 ARGOCD_HOSTNAME="argocd.${APP_DOMAIN}"
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TF_DIR="${REPO_ROOT}/terraform"
