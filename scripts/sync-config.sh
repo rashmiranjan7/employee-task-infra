@@ -15,10 +15,14 @@
 set -euo pipefail
 
 APP_PATH="${1:?Usage: $0 <path-to-employee-task-app>}"
+# Resolve to an absolute path immediately, before any `cd` happens below -
+# otherwise a relative path like "../employee-task-app" breaks the moment
+# the script cd's into terraform/ first.
+APP_PATH="$(cd "${APP_PATH}" && pwd)"
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TF_DIR="${REPO_ROOT}/terraform"
 AWS_REGION="us-east-1"
-APP_DOMAIN="yourdomain.com"   # same value as domain_name in terraform.tfvars
+APP_DOMAIN="rashmidevops.xyz"   # same value as domain_name in terraform.tfvars
 
 echo "==> Reading terraform output"
 cd "${TF_DIR}"
