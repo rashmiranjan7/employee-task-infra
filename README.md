@@ -1,95 +1,156 @@
 # Employee Task Tracker — Infrastructure Repository
 
-Terraform code for the AWS infrastructure this app runs on: VPC, EKS, RDS, ECR, DNS/TLS, and a Jenkins server. One `terraform apply` builds all of it. What actually runs on the cluster is deployed by ArgoCD - see [employee-task-gitops](https://github.com/rashmiranjan7/employee-task-gitops).
+This repo has the Terraform code. It builds all the AWS infrastructure the app runs on. That means the network, the Kubernetes cluster, the database, the container registry, DNS, HTTPS, and a Jenkins server. One command (`terraform apply`) builds all of it.
 
-Part of a 3-repo project. The other two: [employee-task-app](https://github.com/rashmiranjan7/employee-task-app) (application source + CI/CD, start here for full setup steps) and [employee-task-gitops](https://github.com/rashmiranjan7/employee-task-gitops) (the ArgoCD Application that deploys it).
+This repo does not deploy the app. It only builds the infrastructure. The app itself is deployed by ArgoCD. That part lives in [employee-task-gitops](https://github.com/rashmiranjanDevOps/employee-task-gitops).
 
-This project only runs one environment (dev) — this is a portfolio/learning project, not a real company setup, so there's no separate prod environment to keep in sync.
+## Part of a 3-repo project
+
+| Repo | What it does |
+|---|---|
+| [employee-task-app](https://github.com/rashmiranjanDevOps/employee-task-app) | The app code, the Helm chart, and CI/CD. Start here for setup steps. |
+| **employee-task-infra** (this one) | Terraform. Everything the app runs on. |
+| [employee-task-gitops](https://github.com/rashmiranjanDevOps/employee-task-gitops) | The ArgoCD file that deploys the app. |
+
+This project has only one environment: dev. There is no separate prod. This is a learning project, not a real company setup.
 
 ## Folder structure
 
 ```
 terraform/
-  main.tf, variables.tf, outputs.tf   everything, one apply
-  backend.hcl                         S3 backend config
-  terraform.tfvars.example            copy to terraform.tfvars and fill in
+  main.tf, variables.tf, outputs.tf   Everything, wired together, one apply
+  backend.hcl                         Where Terraform stores its state (S3)
+  terraform.tfvars.example            Copy this to terraform.tfvars and fill in your values
   modules/
-    vpc/              network: public/private/database subnets
-    eks/               the Kubernetes cluster + IRSA role for the ALB controller
-    rds/               the MySQL database
-    ecr/               2 container repos (backend, frontend)
-    acm/               HTTPS certificate for the one app hostname
-    route53/            looks up the existing hosted zone (doesn't create one)
-    jenkins-server/     one EC2 instance; user-data.sh installs Jenkins on boot
+    vpc/              The network: public, private, and database subnets
+    eks/              The Kubernetes cluster, plus the role the load balancer controller uses
+    rds/               The MySQL database
+    ecr/                Two container repos, one for the backend and one for the frontend
+    acm/                The HTTPS certificate for the app's domain
+    route53/            Finds the domain's existing DNS zone (does not create one)
+    jenkins-server/     One EC2 server. It installs Jenkins on itself when it boots.
 
 k8s/argocd/
-  ingress.yaml.tpl   template for ArgoCD's UI Ingress
+  ingress.yaml.tpl   Template for ArgoCD's own web address
 
 scripts/
-  bootstrap-backend.sh       one-time: creates the S3 bucket + DynamoDB table for state
-  sync-config.sh              copies terraform output (registry, cert ARN) into
-                                employee-task-app's Helm chart values.yaml
-  install-cluster-addons.sh   installs the AWS Load Balancer Controller + ArgoCD
-  install-monitoring.sh       (optional) installs Prometheus/Grafana in-cluster
-  update-dns.sh                points one hostname at one ALB
+  bootstrap-backend.sh       Run once: creates the S3 bucket and DynamoDB table Terraform needs
+  sync-config.sh              Copies values from Terraform into the app repo's Helm chart
+  install-cluster-addons.sh   Installs the load balancer controller and ArgoCD
+  install-monitoring.sh       Optional: installs Prometheus and Grafana in the cluster
+  update-dns.sh                Points the app's domain at the load balancer
 ```
 
-## Technology stack
+## Tech stack
 
-Terraform · AWS (VPC, EKS, RDS, ECR, IAM, Route53, ACM, EC2)
+Terraform, AWS (VPC, EKS, RDS, ECR, IAM, Route53, ACM, EC2)
 
-## Setup instructions
+## What this builds
+
+One `terraform apply` creates:
+- A VPC with public, private, and database subnets, across 2 zones
+- An EKS (Kubernetes) cluster with one small group of worker nodes
+- An RDS MySQL database. Only the EKS nodes can reach it.
+- Two ECR repos, for the backend and frontend images
+- A Route53 lookup and an ACM certificate, for HTTPS
+- An IAM role that GitHub Actions can use. No AWS keys are stored in GitHub.
+- An EC2 server that installs Jenkins on itself automatically
+
+## Setup
 
 ```bash
 cd terraform
-../scripts/bootstrap-backend.sh us-east-1     # one-time: creates the S3 + DynamoDB backend
+../scripts/bootstrap-backend.sh us-east-1     # run once: creates the S3 + DynamoDB backend
 
 cp terraform.tfvars.example terraform.tfvars   # fill in your own values
 terraform init -backend-config=backend.hcl
 terraform apply -var-file=terraform.tfvars
 ```
 
-That one apply creates the VPC, EKS cluster, RDS database, ECR repos, ACM cert, GitHub OIDC role, and the Jenkins server (Jenkins installs itself automatically on boot - no separate step needed).
+This is the short version. For the full step-by-step process, with a check after every step, see [SETUP-FULL.md](./SETUP-FULL.md).
 
-Full step-by-step order across all 3 repos: `employee-task-app`'s [SETUP.md](https://github.com/rashmiranjan7/employee-task-app/blob/main/SETUP.md).
+## Before you run any script: set your real domain
 
-## Deployment instructions
+Two scripts have a placeholder domain in them. Terraform does not fill this in for you. You have to edit it by hand.
 
-"Deploying" this repo means applying a Terraform change:
+- `scripts/install-cluster-addons.sh`
+- `scripts/sync-config.sh`
+
+Both files have this line near the top:
 
 ```bash
-cd terraform
-terraform plan -var-file=terraform.tfvars     # always review before applying
+APP_DOMAIN="yourdomain.com"   # same value as domain_name in terraform.tfvars
+```
+
+Open both files and change it to your real domain:
+
+```bash
+APP_DOMAIN="rashmidevops.xyz"
+```
+
+If you skip this step, two things go wrong:
+- `install-cluster-addons.sh` will try to open ArgoCD at `argocd.yourdomain.com`, not your real domain.
+- `sync-config.sh` will write the wrong `host` value into the Helm chart.
+
+`update-dns.sh` does not need this fix. Its domain is already set correctly.
+
+## Making a change
+
+To "deploy" this repo, you apply a Terraform change:
+
+```bash
+terraform plan -var-file=terraform.tfvars     # always check what will change first
 terraform apply -var-file=terraform.tfvars
 ```
 
-If you change `terraform/modules/jenkins-server/user-data.sh`, that only runs again on a fresh EC2 boot — `terraform apply` won't re-run it on the existing instance. Easiest fix: `terraform taint module.jenkins_server.aws_instance.jenkins` then apply again.
+One thing to know: if you edit `terraform/modules/jenkins-server/user-data.sh`, it only runs again when the EC2 server boots fresh. A normal `terraform apply` will not re-run it on a server that's already running. To force it to run again:
 
-## Rollback procedure
+```bash
+terraform taint module.jenkins_server.aws_instance.jenkins
+terraform apply -var-file=terraform.tfvars
+```
 
-`git revert` the `.tf`/`.tfvars` change in question, then `terraform apply` again. Always run `terraform plan` before every apply so you see exactly what will change first.
+## Rolling back a bad change
 
-## Troubleshooting guide
+Use `git revert` on the `.tf` file you changed, then run `terraform apply` again. Always run `terraform plan` first, so you know exactly what will change before it happens.
 
-| Symptom | Likely cause |
+## Full runbooks
+
+The steps above are the short version. For the complete process, with a check after every step, see:
+
+- [SETUP-FULL.md](./SETUP-FULL.md) — the full path from nothing to a live app with monitoring
+- [DESTROY.md](./DESTROY.md) — the full teardown, in the order that avoids leftover AWS load balancers and surprise charges
+
+## Cost and why I made these choices
+
+This is a small personal project. I made a few choices to keep the cost low, instead of copying a full production setup:
+
+- **One shared NAT Gateway**, instead of one per zone. This saves about $32/month. The trade-off: if that one zone has an outage, both private subnets lose internet access at the same time. A real company would use one NAT per zone. For a learning project, one shared NAT is the normal choice.
+- **No extra encryption key (KMS).** RDS and EKS already encrypt data using AWS's own default key. Adding a second key would be one more thing to manage, for no real benefit here.
+- **RDS backups kept for only 1 day**, and no final snapshot on delete. This is a dev database. I rebuild it often. I don't need long backup history for it.
+- **One small worker node** (t3.medium), instead of an auto-scaling group of bigger nodes. Enough to run the app. Not built for real user traffic.
+
+Rough cost: **$60–90 per month** while it's running. I run `terraform destroy` (see [DESTROY.md](./DESTROY.md)) between work sessions, so I don't pay for it while I'm not using it.
+
+## Troubleshooting
+
+| Problem | Likely cause |
 |---|---|
-| `Error: Error acquiring the state lock` | A previous `apply`/`plan` didn't exit cleanly — `terraform force-unlock <lock-id>` after confirming no one else is applying |
-| `data.aws_route53_zone.this: no matching Route53Zone found` | The domain's hosted zone doesn't exist in this account yet — this repo only looks it up, never creates it |
-| ACM stuck `PENDING_VALIDATION` past when `terraform apply` finishes | Almost always DNS delegation, not a Terraform bug — `dig NS <domain> +short` should return AWS nameservers |
-| Jenkins UI not reachable | Wait 2-3 minutes after `terraform apply` for user-data.sh to finish, then check `jenkins_admin_cidr` matches your current IP |
-| Jenkins job fails with "command not found" | SSH in and check `/var/log/cloud-init-output.log` — user-data.sh may still be running or failed partway |
-| ALB never gets created / Ingress has no `ADDRESS` | Almost always IRSA — see `employee-task-app`'s TROUBLESHOOTING.md |
+| `Error acquiring the state lock` | A previous apply or plan didn't finish cleanly. Run `terraform force-unlock <lock-id>`, but only after checking no one else is applying. |
+| `no matching Route53Zone found` | The domain's DNS zone doesn't exist in this AWS account yet. This repo only looks it up — it never creates one. |
+| ACM certificate stuck on `PENDING_VALIDATION` | Almost always a DNS problem, not a Terraform bug. Run `dig NS <domain> +short` and check it returns AWS's nameservers. |
+| ArgoCD or the app shows up at the wrong domain | `APP_DOMAIN` was never changed in `install-cluster-addons.sh` or `sync-config.sh`. See the section above. |
+| Jenkins UI not reachable | Wait 2–3 minutes after `terraform apply` for the boot script to finish. Then check `jenkins_admin_cidr` matches your current IP. |
+| Jenkins job fails with "command not found" | SSH into the server and check `/var/log/cloud-init-output.log`. The boot script may still be running, or it may have failed partway. |
+| ALB never gets created, or the Ingress has no address | Almost always an IAM role problem (IRSA). See `employee-task-app`'s TROUBLESHOOTING.md. |
+| Teardown gets stuck on a VPC or subnet | A leftover load balancer or target group is still attached. See [DESTROY.md](./DESTROY.md) — it has checks built in for exactly this. |
 
-Full troubleshooting guide (covers all 3 repos): `employee-task-app`'s [TROUBLESHOOTING.md](https://github.com/rashmiranjan7/employee-task-app/blob/main/TROUBLESHOOTING.md).
+Full troubleshooting guide across all 3 repos: `employee-task-app`'s [TROUBLESHOOTING.md](https://github.com/rashmiranjanDevOps/employee-task-app/blob/main/TROUBLESHOOTING.md).
 
-## Why Terraform installs Jenkins with user_data instead of a separate tool
+## Why Terraform installs Jenkins by itself
 
-Terraform creates the EC2 instance AND passes it a boot script (`user-data.sh`) that installs Docker, Jenkins, kubectl, Helm, Trivy, and Node. One `terraform apply`, no second tool or second step to remember to run.
+Terraform creates the EC2 server and gives it a boot script (`user-data.sh`). That script installs Docker, Jenkins, kubectl, Helm, Trivy, and Node automatically. So one `terraform apply` is the whole setup. There's no second step to remember.
 
-## Why the AWS Load Balancer Controller uses IRSA, not the node's IAM role
+## Why the Load Balancer Controller uses its own role, not the node's role
 
-The controller's IAM role and policy (`terraform/modules/eks/irsa.tf`) are fully Terraform-managed. `scripts/install-cluster-addons.sh` annotates the controller's ServiceAccount with that role's ARN and checks the annotation actually landed, since a correct IRSA role has zero effect until that annotation exists.
-
-## Screenshots
-
-_Add a `terraform plan` output, the AWS Console showing the EKS cluster and RDS instance, and the Jenkins UI here once deployed._
+This is called IRSA. It means only the load balancer controller's own Kubernetes account gets AWS permissions — not the whole node. The role is fully set up in `terraform/modules/eks/irsa.tf`. The script `install-cluster-addons.sh` checks that this role is actually attached before moving on, because the role does nothing until it's attached.
