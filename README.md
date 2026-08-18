@@ -118,7 +118,7 @@ Use `git revert` on the `.tf` file you changed, then run `terraform apply` again
 
 The steps above are the short version. For the complete process, with a check after every step, see:
 
-- [SETUP-FULL.md](./SETUP-FULL.md) — the full path from nothing to a live app with monitoring
+- [SETUP.md](./SETUP.md) — the full path from nothing to a live app with monitoring
 - [DESTROY.md](./DESTROY.md) — the full teardown, in the order that avoids leftover AWS load balancers and surprise charges
 
 ## Cost and why I made these choices
