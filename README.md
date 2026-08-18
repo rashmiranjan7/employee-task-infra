@@ -8,9 +8,9 @@ This repo does not deploy the app. It only builds the infrastructure. The app it
 
 | Repo | What it does |
 |---|---|
-| [employee-task-app](https://github.com/rashmiranjanDevOps/employee-task-app) | The app code, the Helm chart, and CI/CD. Start here for setup steps. |
+| [employee-task-app](https://github.com/rashmiranjan7/employee-task-app.git) | The app code, the Helm chart, and CI/CD. Start here for setup steps. |
 | **employee-task-infra** (this one) | Terraform. Everything the app runs on. |
-| [employee-task-gitops](https://github.com/rashmiranjanDevOps/employee-task-gitops) | The ArgoCD file that deploys the app. |
+| [employee-task-gitops](https://github.com/rashmiranjan7/employee-task-gitops.git) | The ArgoCD file that deploys the app. |
 
 This project has only one environment: dev. There is no separate prod. This is a learning project, not a real company setup.
 
